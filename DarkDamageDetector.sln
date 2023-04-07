@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29509.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkDamageDetector", "DarkDamageDetector\DarkDamageDetector.csproj", "{7C2904FC-9A04-4960-97AF-6BED337C8B81}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C2904FC-9A04-4960-97AF-6BED337C8B81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C2904FC-9A04-4960-97AF-6BED337C8B81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C2904FC-9A04-4960-97AF-6BED337C8B81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C2904FC-9A04-4960-97AF-6BED337C8B81}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {91DFCDD0-9A79-4474-8CD2-39F026B5E225}
+	EndGlobalSection
+EndGlobal
