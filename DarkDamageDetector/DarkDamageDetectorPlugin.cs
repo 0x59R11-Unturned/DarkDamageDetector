@@ -159,8 +159,15 @@ namespace DarkDamageDetector
                 UnturnedPlayer player = UnturnedPlayer.FromPlayer(parameters.player);
                 UnturnedPlayer killer = UnturnedPlayer.FromCSteamID(parameters.killer);
 
-                if (player != null && killer != null && parameters.cause != EDeathCause.ZOMBIE)
+                if (player?.Player != null && killer?.Player != null && parameters.cause != EDeathCause.ZOMBIE)
                 {
+                    string limbString = parameters.limb.ToString().ToLower();
+                    UIEffect effect;
+                    if (!Configuration.Instance.TryGetEffectById(EDetectType.PLAYER_DAMAGE, limbString, out effect))
+                    {
+                        return;
+                    }
+                    
                     float times = parameters.times;
                     if (parameters.respectArmor)
                     {
@@ -169,15 +176,10 @@ namespace DarkDamageDetector
                     if (parameters.applyGlobalArmorMultiplier)
                     {
                         times *= Provider.modeConfigData.Players.Armor_Multiplier;
-                    }      
+                    }
                     
                     byte totalDamage = (byte)Mathf.Min(byte.MaxValue, Mathf.FloorToInt(parameters.damage * times));
-                    string limbString = parameters.limb.ToString().ToLower();
-
-                    if (Configuration.Instance.TryGetEffectById(EDetectType.PLAYER_DAMAGE, limbString, out UIEffect effect))
-                    {
-                        SendUI(effect.EffectId, GetKey(killer.CSteamID, EDetectType.PLAYER_DAMAGE, effect.EffectKey), killer.CSteamID, effect.HasText ? string.Format(effect.Text, totalDamage) : null);
-                    }
+                    SendUI(effect.EffectId, GetKey(killer.CSteamID, EDetectType.PLAYER_DAMAGE, effect.EffectKey), killer.CSteamID, effect.Translate(totalDamage));
                 }
             }
             catch (Exception ex)
@@ -192,11 +194,11 @@ namespace DarkDamageDetector
             {
                 UnturnedPlayer killer = UnturnedPlayer.FromCSteamID(murderer);
 
-                if (player != null && killer != null && cause != EDeathCause.ZOMBIE && player != killer)
+                if (player?.Player != null && killer?.Player != null && cause != EDeathCause.ZOMBIE && player != killer)
                 {
                     if (Configuration.Instance.TryGetEffectById(EDetectType.PLAYER_KILL, limb.ToString().ToLower(), out UIEffect effect))
                     {
-                        SendUI(effect.EffectId, GetKey(killer.CSteamID, EDetectType.PLAYER_KILL, effect.EffectKey), killer.CSteamID, effect.HasText ? effect.Text : null);
+                        SendUI(effect.EffectId, GetKey(killer.CSteamID, EDetectType.PLAYER_KILL, effect.EffectKey), killer.CSteamID, effect.Translate());
                     }
                 }
             }
@@ -215,21 +217,40 @@ namespace DarkDamageDetector
             {
                 UnturnedPlayer player = UnturnedPlayer.FromCSteamID(instigator);
 
-                if (player != null && vehicle?.isDead == false)
+                if (player?.Player != null && vehicle?.isDead == false)
                 {
+                    UIEffect effect;
+                    bool killed = false;
+                    if (totalDamage >= vehicle.health)
+                    {
+                        if (!Configuration.Instance.TryGetEffectById(EDetectType.VEHICLE_KILL,
+                                damageOrigin.ToString().ToLower(), out effect))
+                        {
+                            return;
+                        }
+                        killed = true;
+                    }
+                    else
+                    {
+                        if (!Configuration.Instance.TryGetEffectById(EDetectType.VEHICLE_DAMAGE,
+                                damageOrigin.ToString().ToLower(), out effect))
+                        {
+                            return;
+                        }
+                    }
+
+
                     string damageString = totalDamage.ToString();
                     if (!Configuration.Instance.VehicleDamageViewValue)
                     {
                         damageString = System.Math.Round((((float)vehicle.health / (float)vehicle.asset.health * 100f) - (((float)vehicle.health - (float)totalDamage) / (float)vehicle.asset.health * 100f)), 1).ToString();
                     }
-
-                    UIEffect effect = null;
-                    if (Configuration.Instance.TryGetEffectById(EDetectType.VEHICLE_DAMAGE, damageOrigin.ToString().ToLower(), out effect))
+                    
+                    if (!killed)
                     {
                         SendUI(effect.EffectId, GetKey(player.CSteamID, EDetectType.VEHICLE_DAMAGE, effect.EffectKey), player.CSteamID, effect.Translate(damageString));
                     }
-
-                    if (totalDamage >= vehicle.health && Configuration.Instance.TryGetEffectById(EDetectType.VEHICLE_KILL, damageOrigin.ToString().ToLower(), out effect))
+                    else
                     {
                         SendUI(effect.EffectId, effect.EffectKey, player.CSteamID, effect.Translate(damageString));
                     }
@@ -250,26 +271,44 @@ namespace DarkDamageDetector
             {
                 UnturnedPlayer player = UnturnedPlayer.FromCSteamID(instigator);
 
-                if (player != null && transform != null)
+                if (player?.Player != null && transform != null)
                 {
                     var structureDrop = StructureManager.FindStructureByRootTransform(transform);
                     if (structureDrop != null)
                     {
                         var data = structureDrop.GetServersideData();
                         
+                        UIEffect effect;
+                        bool destroyed = false;
+                        if (totalDamage >= data.structure.health)
+                        {
+                            if (!Configuration.Instance.TryGetEffectById(EDetectType.STRUCTURE_KILL,
+                                    damageOrigin.ToString().ToLower(), out effect))
+                            {
+                                return;
+                            }
+                            destroyed = true;
+                        }
+                        else
+                        {
+                            if (!Configuration.Instance.TryGetEffectById(EDetectType.STRUCTURE_DAMAGE,
+                                    damageOrigin.ToString().ToLower(), out effect))
+                            {
+                                return;
+                            }
+                        }
+
                         string damageString = totalDamage.ToString();
                         if (!Configuration.Instance.StructureDamageViewValue)
                         {
                             damageString = System.Math.Round((((float)data.structure.health / (float)data.structure.asset.health * 100f) - ((float)(data.structure.health - totalDamage) / (float)data.structure.asset.health * 100f)), 1).ToString();
                         }
 
-                        UIEffect effect = null;
-                        if (Configuration.Instance.TryGetEffectById(EDetectType.STRUCTURE_DAMAGE, damageOrigin.ToString().ToLower(), out effect))
+                        if (!destroyed)
                         {
                             SendUI(effect.EffectId, GetKey(player.CSteamID, EDetectType.STRUCTURE_DAMAGE, effect.EffectKey), player.CSteamID, effect.Translate(damageString));
                         }
-
-                        if (totalDamage >= data.structure.health && Configuration.Instance.TryGetEffectById(EDetectType.STRUCTURE_KILL, damageOrigin.ToString().ToLower(), out effect))
+                        else
                         {
                             SendUI(effect.EffectId, effect.EffectKey, player.CSteamID, effect.Translate(damageString));
                         }
@@ -291,12 +330,32 @@ namespace DarkDamageDetector
             {
                 UnturnedPlayer player = UnturnedPlayer.FromCSteamID(instigator);
 
-                if (player != null && transform != null)
+                if (player?.Player != null && transform != null)
                 {
                     var barricadeDrop = BarricadeManager.FindBarricadeByRootTransform(transform);
                     if (barricadeDrop != null)
                     {
                         var data = barricadeDrop.GetServersideData();
+
+                        UIEffect effect;
+                        bool destroyed = false;
+                        if (totalDamage >= data.barricade.health)
+                        {
+                            if (!Configuration.Instance.TryGetEffectById(EDetectType.BARRICADE_KILL,
+                                    damageOrigin.ToString().ToLower(), out effect))
+                            {
+                                return;
+                            }
+                            destroyed = true;
+                        }
+                        else
+                        {
+                            if (!Configuration.Instance.TryGetEffectById(EDetectType.BARRICADE_DAMAGE,
+                                    damageOrigin.ToString().ToLower(), out effect))
+                            {
+                                return;
+                            }
+                        }
                         
                         string damageString = totalDamage.ToString();
                         if (!Configuration.Instance.BarricadeDamageViewValue)
@@ -304,13 +363,11 @@ namespace DarkDamageDetector
                             damageString = System.Math.Round((((float)data.barricade.health / (float)data.barricade.asset.health * 100f) - ((float)(data.barricade.health - totalDamage) / (float)data.barricade.asset.health * 100f)), 1).ToString();
                         }
 
-                        UIEffect effect = null;
-                        if (Configuration.Instance.TryGetEffectById(EDetectType.BARRICADE_DAMAGE, damageOrigin.ToString().ToLower(), out effect))
+                        if (!destroyed)
                         {
                             SendUI(effect.EffectId, GetKey(player.CSteamID, EDetectType.BARRICADE_DAMAGE, effect.EffectKey), player.CSteamID, effect.Translate(damageString));
                         }
-
-                        if (totalDamage >= data.barricade.health && Configuration.Instance.TryGetEffectById(EDetectType.BARRICADE_KILL, damageOrigin.ToString().ToLower(), out effect))
+                        else
                         {
                             SendUI(effect.EffectId, effect.EffectKey, player.CSteamID, effect.Translate(damageString));
                         }
@@ -334,10 +391,16 @@ namespace DarkDamageDetector
                 if (player != null)
                 {
                     UnturnedPlayer initiator = UnturnedPlayer.FromPlayer(player);
-                    if (initiator != null && parameters.zombie != null)
+                    if (initiator?.Player != null && parameters.zombie != null)
                     {
+                        string limbString = parameters.limb.ToString().ToLower();
+                        UIEffect effect;
+                        if (!Configuration.Instance.TryGetEffectById(EDetectType.ZOMBIE_DAMAGE, limbString, out effect))
+                        {
+                            return;
+                        }
+                        
                         float times = parameters.times;
-
                         if (parameters.respectArmor)
                         {
                             times *= DamageTool.getZombieArmor(parameters.limb, parameters.zombie);
@@ -346,14 +409,9 @@ namespace DarkDamageDetector
                         {
                             parameters.times *= Provider.modeConfigData.Zombies.Backstab_Multiplier;
                         }
-
+                        
                         ushort totalDamage = (ushort)Mathf.Min(ushort.MaxValue, Mathf.FloorToInt(parameters.damage * times));
-                        string limbString = parameters.limb.ToString().ToLower();
-
-                        if (Configuration.Instance.TryGetEffectById(EDetectType.ZOMBIE_DAMAGE, limbString, out UIEffect effect))
-                        {
-                            SendUI(effect.EffectId, GetKey(initiator.CSteamID, EDetectType.ZOMBIE_DAMAGE, effect.EffectKey), initiator.CSteamID, effect.Translate(totalDamage));
-                        }
+                        SendUI(effect.EffectId, GetKey(initiator.CSteamID, EDetectType.ZOMBIE_DAMAGE, effect.EffectKey), initiator.CSteamID, effect.Translate(totalDamage));
                     }
                 }
             }
@@ -372,7 +430,7 @@ namespace DarkDamageDetector
             {
                 UnturnedPlayer player = UnturnedPlayer.FromCSteamID(instigator);
 
-                if (player != null && transform != null)
+                if (player?.Player != null && transform != null)
                 {
                     if (Regions.tryGetCoordinate(transform.position, out byte x, out byte y))
                     {
@@ -383,19 +441,37 @@ namespace DarkDamageDetector
                             {
                                 ResourceSpawnpoint resource = resources[i];
 
+                                UIEffect effect;
+                                bool destroyed = false;
+                                if (totalDamage >= resource.health)
+                                {
+                                    if (!Configuration.Instance.TryGetEffectById(EDetectType.RESOURCE_KILL,
+                                            damageOrigin.ToString().ToLower(), out effect))
+                                    {
+                                        return;
+                                    }
+                                    destroyed = true;
+                                }
+                                else
+                                {
+                                    if (!Configuration.Instance.TryGetEffectById(EDetectType.RESOURCE_DAMAGE,
+                                            damageOrigin.ToString().ToLower(), out effect))
+                                    {
+                                        return;
+                                    }
+                                }
+
                                 string damageString = totalDamage.ToString();
                                 if (!Configuration.Instance.ResourceDamageViewValue)
                                 {
                                     damageString = System.Math.Round((((float)resource.health / (float)resource.asset.health * 100f) - ((float)(resource.health - totalDamage) / (float)resource.asset.health * 100f)), 1).ToString();
                                 }
-
-                                UIEffect effect = null;
-                                if (Configuration.Instance.TryGetEffectById(EDetectType.RESOURCE_DAMAGE, damageOrigin.ToString().ToLower(), out effect))
+                                
+                                if (!destroyed)
                                 {
                                     SendUI(effect.EffectId, GetKey(player.CSteamID, EDetectType.RESOURCE_DAMAGE, effect.EffectKey), player.CSteamID, effect.Translate(damageString));
                                 }
-                                
-                                if (totalDamage >= resource.health && Configuration.Instance.TryGetEffectById(EDetectType.RESOURCE_KILL, damageOrigin.ToString().ToLower(), out effect))
+                                else
                                 {
                                     SendUI(effect.EffectId, effect.EffectKey, player.CSteamID, effect.Translate(damageString));
                                 }

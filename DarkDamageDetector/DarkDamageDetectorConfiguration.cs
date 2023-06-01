@@ -75,7 +75,7 @@ namespace DarkDamageDetector
             effect = Effects.FirstOrDefault(e => e.Id == id && e.Enabled);
             if (effect == null)
             {
-                effect = Effects.FirstOrDefault(e => e.Id == detectType.ToString().ToLower());
+                effect = Effects.FirstOrDefault(e => e.Id == detectType.ToString().ToLower() && e.Enabled);
             }
             return effect != null;
         }

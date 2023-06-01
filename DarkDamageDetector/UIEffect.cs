@@ -30,7 +30,7 @@ namespace DarkDamageDetector
 
         public string Translate(params object[] parameters)
         {
-            return (HasText && parameters != null) ? string.Format(Text, parameters) : null;
+            return HasText ? string.Format(Text, parameters ?? Array.Empty<object>()) : null;
         }
     }
 }
